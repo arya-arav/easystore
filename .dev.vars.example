@@ -1,0 +1,15 @@
+# Copy to .dev.vars for `pnpm preview` (wrangler) and `next dev`. Never commit .dev.vars.
+NEXTJS_ENV=development
+DATABASE_URL="postgresql://user:password@your-neon-host/neondb?sslmode=require"
+NEXTAUTH_SECRET=""
+NEXTAUTH_URL="http://localhost:8787"
+NEXT_PUBLIC_APP_URL="http://localhost:8787"
+R2_PUBLIC_URL="https://images.your-domain.com"
+RAZORPAY_KEY_ID=""
+RAZORPAY_KEY_SECRET=""
+RAZORPAY_WEBHOOK_SECRET=""
+GOOGLE_CLIENT_ID=""
+GOOGLE_CLIENT_SECRET=""
+STRIPE_SECRET_KEY=""
+STRIPE_WEBHOOK_SECRET=""
+WHATSAPP_API_KEY=""

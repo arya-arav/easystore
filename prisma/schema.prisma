@@ -1,0 +1,819 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Category {
+  id          String     @id @default(cuid())
+  name        String
+  slug        String     @unique
+  description String?
+  image       String?
+  parentId    String?
+  isActive    Boolean    @default(true)
+  sortOrder   Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryHierarchy")
+  products    Product[]
+
+  @@index([slug])
+  @@index([parentId])
+}
+
+model Product {
+  id                String         @id @default(cuid())
+  name              String
+  slug              String         @unique
+  sku               String         @unique
+  description       String
+  shortDescription  String?
+  price             Decimal        @db.Decimal(12, 2)
+  compareAtPrice    Decimal?       @db.Decimal(12, 2)
+  costPrice         Decimal?       @db.Decimal(12, 2)
+  gstRate           Decimal        @default(18) @db.Decimal(5, 2)
+  gstInclusive      Boolean        @default(true)
+  stock             Int            @default(0)
+  lowStockThreshold Int            @default(5)
+  trackInventory    Boolean        @default(true)
+  weight            Decimal?       @db.Decimal(8, 2)
+  dimensions        String?
+  primaryImage      String?
+  categoryId        String
+  ageGroup          AgeGroup?
+  gender            Gender?
+  status            ProductStatus  @default(DRAFT)
+  isFeatured        Boolean        @default(false)
+  isBestseller      Boolean        @default(false)
+  isNewArrival      Boolean        @default(false)
+  metaTitle         String?
+  metaDescription   String?
+  colors            String? // JSON array of {name, hex} objects
+  sizes             String? // JSON array of size objects (varies by sizeGuideType)
+  sizeGuideType     SizeGuideType?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  cartItems         CartItem[]
+  orderItems        OrderItem[]
+  category          Category       @relation(fields: [categoryId], references: [id])
+  images            ProductImage[]
+  reviews           Review[]
+  wishlistItems     WishlistItem[]
+  tags              ProductTag[]   @relation("ProductTags")
+  collections       Collection[]   @relation("ProductCollections")
+
+  variants ProductVariant[] // Stock per colour/size combination (optional)
+
+  @@index([slug])
+  @@index([sku])
+  @@index([categoryId])
+  @@index([status])
+}
+
+model ProductImage {
+  id        String   @id @default(cuid())
+  productId String
+  url       String
+  alt       String?
+  sortOrder Int      @default(0)
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+}
+
+model ProductTag {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  slug     String    @unique
+  products Product[] @relation("ProductTags")
+
+  @@index([slug])
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  variant   String   @default("") // Chosen options, e.g. "Size: M / Colour: Red"; "" when none
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId, variant])
+  @@index([userId])
+}
+
+model WishlistItem {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([userId])
+}
+
+model Order {
+  id                    String               @id @default(cuid())
+  orderNumber           String               @unique @default(cuid())
+  userId                String
+  shippingName          String
+  shippingPhone         String
+  shippingAddressLine1  String
+  shippingAddressLine2  String?
+  shippingCity          String
+  shippingState         String
+  shippingPincode       String
+  shippingCountry       String               @default("India")
+  billingSameAsShipping Boolean              @default(true)
+  billingName           String?
+  billingAddressLine1   String?
+  billingAddressLine2   String?
+  billingCity           String?
+  billingState          String?
+  billingPincode        String?
+  subtotal              Decimal              @db.Decimal(12, 2)
+  discount              Decimal              @default(0) @db.Decimal(12, 2)
+  couponCode            String?
+  pointsEarned          Int                  @default(0)
+  pointsRedeemed        Int                  @default(0)
+  gstAmount             Decimal              @db.Decimal(12, 2)
+  shippingCharge        Decimal              @default(0) @db.Decimal(12, 2)
+  shippingMethod        String? // shipping option chosen at checkout
+  codFee                Decimal              @default(0) @db.Decimal(12, 2)
+  total                 Decimal              @db.Decimal(12, 2)
+  // Amounts above are in INR. Customers pay in `currency` at `exchangeRate` (1 INR = rate units).
+  currency              String               @default("INR")
+  exchangeRate          Decimal              @default(1) @db.Decimal(18, 8)
+  paymentMethod         PaymentMethod
+  paymentStatus         PaymentStatus        @default(PENDING)
+  paymentId             String?
+  orderId               String?
+  status                OrderStatus          @default(PENDING)
+  estimatedDelivery     DateTime?
+  deliveredAt           DateTime?
+  trackingNumber        String?
+  trackingUrl           String?
+  customerNotes         String?
+  giftWrap              Boolean              @default(false)
+  giftMessage           String?
+  adminNotes            String?
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  user                  User                 @relation(fields: [userId], references: [id])
+  items                 OrderItem[]
+  statusHistory         OrderStatusHistory[]
+  refunds               OrderRefund[]
+  returns               OrderReturn[]
+
+  @@index([orderNumber])
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id           String   @id @default(cuid())
+  orderId      String
+  productId    String?
+  productName  String
+  productSku   String
+  productImage String?
+  variant      String? // Chosen options at time of order, e.g. "Size: M / Colour: Red"
+  price        Decimal  @db.Decimal(12, 2)
+  gstRate      Decimal  @db.Decimal(5, 2)
+  gstAmount    Decimal  @db.Decimal(12, 2)
+  quantity     Int
+  createdAt    DateTime @default(now())
+  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product      Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model OrderStatusHistory {
+  id        String      @id @default(cuid())
+  orderId   String
+  status    OrderStatus
+  note      String?
+  createdAt DateTime    @default(now())
+  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+model Address {
+  id           String      @id @default(cuid())
+  userId       String
+  name         String
+  phone        String
+  addressLine1 String
+  addressLine2 String?
+  landmark     String?
+  city         String
+  state        String
+  pincode      String
+  country      String      @default("India")
+  type         AddressType @default(HOME)
+  isDefault    Boolean     @default(false)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Review {
+  id           String   @id @default(cuid())
+  userId       String
+  productId    String?
+  rating       Int
+  title        String?
+  comment      String?
+  images       String[]
+  isVerified   Boolean  @default(false)
+  isApproved   Boolean  @default(true)
+  helpfulCount Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  product      Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  user         User     @relation(fields: [userId], references: [id])
+
+  @@index([productId])
+  @@index([userId])
+}
+
+model Coupon {
+  id            String           @id @default(cuid())
+  code          String           @unique
+  description   String?
+  discountType  DiscountType
+  discountValue Decimal          @db.Decimal(12, 2)
+  minOrderValue Decimal?         @db.Decimal(12, 2)
+  maxDiscount   Decimal?         @db.Decimal(12, 2)
+  usageLimit    Int?
+  usedCount     Int              @default(0)
+  validFrom     DateTime
+  validTo       DateTime
+  isActive      Boolean          @default(true)
+  applicableTo  CouponApplicable @default(ALL)
+  categoryId    String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@index([code])
+}
+
+model ShippingZone {
+  id        String   @id @default(cuid())
+  name      String
+  countries String[] @default([]) // ISO codes, e.g. ["US", "GB"]; empty = India zone
+  states    String[]
+  pincodes  String[]
+  baseRate  Decimal  @db.Decimal(12, 2)
+  freeAbove Decimal? @db.Decimal(12, 2)
+  perKgRate Decimal? @db.Decimal(12, 2)
+  minDays   Int      @default(3)
+  maxDays   Int      @default(7)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([states])
+}
+
+model ContactMessage {
+  id        String        @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String
+  message   String
+  status    ContactStatus @default(NEW)
+  repliedAt DateTime?
+  reply     String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([status])
+}
+
+model NewsletterSubscriber {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  isActive       Boolean   @default(true)
+  subscribedAt   DateTime  @default(now())
+  unsubscribedAt DateTime?
+
+  @@index([email])
+}
+
+model Banner {
+  id        String         @id @default(cuid())
+  title     String
+  subtitle  String?
+  image     String
+  link      String?
+  position  BannerPosition
+  isActive  Boolean        @default(true)
+  sortOrder Int            @default(0)
+  showFrom  DateTime?
+  showTo    DateTime?
+  design    Json? // look: mobile image, button, text position/colour (lib/banners.ts)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@index([position])
+}
+
+/// Layout for each banner position (slider, fade, tiles, height...). See lib/banners.ts.
+model BannerPlacement {
+  position  String   @id
+  settings  Json     @default("{}")
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+enum Role {
+  CUSTOMER
+  SELLER
+  ADMIN
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+  OUT_OF_STOCK
+}
+
+enum AgeGroup {
+  NEWBORN
+  INFANT
+  TODDLER
+  PRESCHOOL
+  KIDS
+  PRETEEN
+}
+
+enum Gender {
+  UNISEX
+  BOYS
+  GIRLS
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+  RETURNED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  RAZORPAY
+  COD
+  UPI
+  STRIPE
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum AddressType {
+  HOME
+  OFFICE
+  OTHER
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
+}
+
+enum CouponApplicable {
+  ALL
+  SPECIFIC_CATEGORY
+  FIRST_ORDER
+}
+
+enum ContactStatus {
+  NEW
+  IN_PROGRESS
+  REPLIED
+  CLOSED
+}
+
+enum BannerPosition {
+  HOMEPAGE_HERO
+  HOMEPAGE_MIDDLE
+  CATEGORY_TOP
+  PRODUCT_PAGE
+}
+
+enum SizeGuideType {
+  CLOTHING
+  FOOTWEAR
+  TOY
+  DIAPER
+  NONE
+}
+
+model User {
+  id               String         @id @default(cuid())
+  email            String         @unique
+  phone            String?        @unique
+  name             String
+  password         String?
+  role             Role           @default(CUSTOMER)
+  emailVerified    DateTime?
+  phoneVerified    DateTime?
+  image            String?
+  resetToken       String?
+  resetTokenExpiry DateTime?
+  emailVerifyToken String?
+  loyaltyBalance   Int            @default(0)
+  referralCode     String?        @unique
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  accounts         Account[]
+  addresses        Address[]
+  cart             CartItem[]
+  orders           Order[]
+  reviews          Review[]
+  sessions         Session[]
+  wishlist         WishlistItem[]
+  loyaltyPoints    LoyaltyPoint[]
+  customerGroupId  String?
+  customerGroup    CustomerGroup? @relation(fields: [customerGroupId], references: [id], onDelete: SetNull)
+  referralsMade    Referral[]     @relation("ReferrerReferrals")
+  referredBy       Referral[]     @relation("ReferredReferrals")
+
+  @@index([email])
+  @@index([phone])
+  @@index([resetToken])
+}
+
+model SiteSettings {
+  id String @id @default("default")
+
+  // What kind of shop this is (lib/shop-types.ts): wording, filters, demo data
+  shopType String @default("baby")
+
+  // Store Info
+  storeName      String  @default("My Store")
+  storeEmail     String  @default("")
+  storePhone     String?
+  whatsappNumber String?
+  storeAddress   String?
+  currency       String  @default("INR")
+
+  // Branding
+  logo           String?
+  favicon        String? @default("/favicon.ico")
+  primaryColor   String  @default("#FF6B9D")
+  secondaryColor String  @default("#4ECDC4")
+
+  // Shipping
+  freeShippingAbove Int @default(499)
+  baseShippingRate  Int @default(49)
+  minDeliveryDays   Int @default(3)
+  maxDeliveryDays   Int @default(7)
+
+  // Tax
+  defaultGstRate Int     @default(18)
+  gstInclusive   Boolean @default(true)
+  gstin          String?
+
+  // Payment
+  razorpayKeyId     String?
+  razorpayKeySecret String?
+
+  // SMTP Email Settings
+  smtpHost      String?
+  smtpPort      Int?    @default(587)
+  smtpUser      String?
+  smtpPassword  String?
+  smtpFromName  String?
+  smtpFromEmail String?
+  smtpSecure    Boolean @default(true)
+
+  // Feature flags stored as JSON
+  paymentMethods String @default("{\"cards\":true,\"upi\":true,\"netbanking\":true,\"wallets\":true,\"cod\":true}")
+  notifications  String @default("{\"orderConfirmation\":true,\"shippingUpdate\":true,\"deliveryConfirmation\":true,\"reviewRequest\":false,\"registrationEmail\":true,\"passwordReset\":true}")
+
+  // Homepage Visual Settings
+  heroTitle     String?
+  heroSubtitle  String?
+  heroBadgeText String?
+  heroCtaText   String?
+  heroCtaLink   String?
+  heroImage     String? // uploadable hero image replacing the emoji
+  heroImageZoom Int     @default(100) // zoom % for hero image (50-200)
+
+  // Homepage Sections Toggle
+  showHeroSection       Boolean @default(true)
+  showCategoriesSection Boolean @default(true)
+  showFeaturedProducts  Boolean @default(true)
+  showBenefitsSection   Boolean @default(true)
+  showNewsletterSection Boolean @default(true)
+
+  // Footer Settings
+  footerLogo      String?
+  footerAboutText String?
+  facebookUrl     String?
+  instagramUrl    String?
+  twitterUrl      String?
+  youtubeUrl      String?
+
+  // Newsletter Settings
+  newsletterTitle    String? @default("Subscribe to our Newsletter!")
+  newsletterSubtitle String?
+
+  // Benefits Section
+  benefit1Icon  String?
+  benefit1Title String?
+  benefit1Desc  String?
+  benefit2Icon  String?
+  benefit2Title String?
+  benefit2Desc  String?
+  benefit3Icon  String?
+  benefit3Title String?
+  benefit3Desc  String?
+  benefit4Icon  String?
+  benefit4Title String?
+  benefit4Desc  String?
+
+  // Feature Toggles
+  showWhatsappButton    Boolean @default(true)
+  showUrgencyIndicators Boolean @default(true)
+  lowStockThreshold     Int     @default(10)
+  showAgeShopTiles      Boolean @default(true)
+  bundleDiscount        Int     @default(5) // % discount for "Frequently Bought Together"
+  referralRewardPoints  Int     @default(100) // points awarded to referrer on first order
+  loyaltyEarnRate       Int     @default(1) // points earned per ₹1 spent
+  loyaltyRedeemRate     Int     @default(1) // ₹ value per point (1 point = ₹1)
+  loyaltyMinRedeem      Int     @default(50) // minimum points to redeem
+  loyaltyMaxRedeemPct   Int     @default(20) // max % of order value payable with points
+
+  // Storefront design (theme, homepage style, section order, product cards) as JSON.
+  // Edited in Admin → Settings → Design; parsed by src/lib/layout-settings.ts.
+  layout String @default("{}")
+
+  // International selling (countries, currencies, cached exchange rates) as JSON.
+  markets String @default("{}")
+
+  // Custom Code
+  customHeadCode String?
+  customBodyCode String?
+
+  updatedAt DateTime @updatedAt
+  policies  String? // JSON: return window, gift wrap, COD fee, return/refund reasons (lib/policies.ts)
+}
+
+model ApiKey {
+  id         String    @id @default(cuid())
+  name       String
+  keyHash    String    @unique
+  keyPrefix  String // first 8 chars for display e.g. "bb_live_"
+  scopes     String    @default("products:write,categories:read,upload")
+  isActive   Boolean   @default(true)
+  lastUsedAt DateTime?
+  expiresAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([keyHash])
+}
+
+model OtpCode {
+  id        String   @id @default(cuid())
+  target    String // email address or phone number
+  code      String // 6-digit OTP
+  type      String // "email" | "whatsapp"
+  purpose   String // "login" | "register"
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([target])
+}
+
+model LoyaltyPoint {
+  id          String    @id @default(cuid())
+  userId      String
+  points      Int // positive = earned, negative = redeemed
+  type        String // "EARNED" | "REDEEMED" | "EXPIRED" | "BONUS"
+  description String
+  orderId     String?
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([orderId])
+}
+
+model Referral {
+  id            String    @id @default(cuid())
+  referrerId    String
+  referredId    String? // null until referred user registers
+  referralCode  String    @unique
+  referredEmail String?
+  status        String    @default("PENDING") // PENDING | COMPLETED | REWARDED
+  rewardPoints  Int       @default(0)
+  orderId       String? // first order that triggered reward
+  createdAt     DateTime  @default(now())
+  completedAt   DateTime?
+  referrer      User      @relation("ReferrerReferrals", fields: [referrerId], references: [id], onDelete: Cascade)
+  referred      User?     @relation("ReferredReferrals", fields: [referredId], references: [id], onDelete: SetNull)
+
+  @@index([referrerId])
+  @@index([referralCode])
+  @@index([referredId])
+}
+
+model Testimonial {
+  id        String   @id @default(cuid())
+  name      String
+  location  String?
+  avatar    String? // image URL or emoji
+  rating    Int      @default(5)
+  text      String
+  product   String? // product name they mention
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+// Stock for one colour/size combination of a product. When a product has rows here,
+// they govern availability and Product.stock is kept as their total.
+model ProductVariant {
+  id        String   @id @default(cuid())
+  productId String
+  color     String   @default("") // Product.colors[].name, "" if the product has no colours
+  size      String   @default("") // Product.sizes[].value, "" if the product has no sizes
+  stock     Int      @default(0)
+  sku       String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, color, size])
+  @@index([productId])
+}
+
+// Hand-picked product groups shown at /collections/<handle> (e.g. "Gifts under ₹999")
+model Collection {
+  id          String    @id @default(cuid())
+  title       String
+  handle      String    @unique
+  description String?
+  image       String?
+  isActive    Boolean   @default(true)
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  products    Product[] @relation("ProductCollections")
+}
+
+// Customers in a group get its discount on every order (e.g. "VIP 10%", "Wholesale 20%")
+model CustomerGroup {
+  id              String   @id @default(cuid())
+  name            String   @unique
+  description     String?
+  discountPercent Decimal  @default(0) @db.Decimal(5, 2)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  customers       User[]
+}
+
+// Money sent back to the customer (can be partial; several per order)
+model OrderRefund {
+  id        String   @id @default(cuid())
+  orderId   String
+  amount    Decimal  @db.Decimal(12, 2)
+  reason    String
+  note      String?
+  createdBy String?
+  createdAt DateTime @default(now())
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+// Items coming back: REQUESTED -> RECEIVED (back in stock) or REJECTED
+model OrderReturn {
+  id           String    @id @default(cuid())
+  orderId      String
+  status       String    @default("REQUESTED")
+  reason       String
+  customerNote String?
+  adminNote    String?
+  items        String // JSON [{ itemId, quantity }]
+  requestedBy  String    @default("ADMIN") // ADMIN | CUSTOMER
+  receivedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  order        Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([status])
+}
+
+// Where we sell (Medusa-style regions): which countries, the currency shown, payment
+// methods allowed, an optional tax rate, and the delivery options with their prices.
+model Region {
+  id              String           @id @default(cuid())
+  name            String
+  countries       String[] // ISO codes; "*" = every country not in another region
+  currency        String           @default("INR")
+  paymentMethods  String[] // RAZORPAY | UPI | COD | STRIPE
+  taxRate         Decimal?         @db.Decimal(5, 2) // overrides product GST (e.g. 0 for exports)
+  isActive        Boolean          @default(true)
+  sortOrder       Int              @default(0)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  shippingOptions ShippingOption[]
+}
+
+model ShippingOption {
+  id        String   @id @default(cuid())
+  regionId  String
+  name      String // e.g. Standard, Express
+  price     Decimal  @default(0) @db.Decimal(12, 2) // INR
+  freeAbove Decimal? @db.Decimal(12, 2) // INR subtotal for free delivery
+  minDays   Int      @default(3)
+  maxDays   Int      @default(7)
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  region    Region   @relation(fields: [regionId], references: [id], onDelete: Cascade)
+
+  @@index([regionId])
+}
+
+/// Rows created by "Install demo data", so "Remove demo data" deletes exactly those.
+model DemoItem {
+  id        String   @id @default(cuid())
+  model     String // product, category, banner, testimonial, coupon
+  recordId  String
+  createdAt DateTime @default(now())
+
+  @@unique([model, recordId])
+}

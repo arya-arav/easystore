@@ -1,0 +1,48 @@
+# EasyStore with its own PostgreSQL. Works as-is in Dokploy and Coolify ("Docker Compose"
+# from this repository) or with `docker compose up -d` on any server.
+# Open the site afterwards: the setup wizard asks for the shop type and admin account.
+
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      DATABASE_URL: postgresql://easystore:${POSTGRES_PASSWORD:-easystore}@db:5432/easystore
+      # Optional. Your public address, e.g. https://shop.example.com (worked out automatically if empty)
+      SITE_URL: ${SITE_URL:-}
+      NEXTAUTH_URL: ${SITE_URL:-}
+      # Optional. Generated and stored in the data volume if empty
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-}
+      # Optional S3-compatible picture storage; without it pictures are saved in the data volume
+      S3_BUCKET: ${S3_BUCKET:-}
+      S3_ENDPOINT: ${S3_ENDPOINT:-}
+      S3_REGION: ${S3_REGION:-auto}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-}
+      S3_PUBLIC_URL: ${S3_PUBLIC_URL:-}
+    volumes:
+      - store-data:/app/data
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: easystore
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-easystore}
+      POSTGRES_DB: easystore
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U easystore -d easystore"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  store-data:
+  db-data:

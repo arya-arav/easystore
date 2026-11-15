@@ -1,0 +1,237 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Set at runtime from settings (DynamicHead and the pre-paint script in app/layout.tsx) */
+    --color-primary: #7FAF8E;   /* Brand colour used by the shop's #7FAF8E classes */
+    --color-secondary: #DDEBE7; /* Soft background tint */
+    --color-accent: #F28C6A;    /* Tailwind primary-* scale: header, footer, buttons */
+    --font-body: system-ui;
+    --color-tint: #DDEBE7;      /* Soft backgrounds (top bar, hero); the theme's secondary when a theme is chosen */
+  }
+
+  body {
+    @apply bg-bg-primary text-text-primary;
+  }
+}
+
+/* Apply CSS vars to key utility classes used across the shop */
+.btn-brand,
+.bg-brand-primary {
+  background-color: var(--color-primary) !important;
+}
+.text-brand-primary {
+  color: var(--color-primary) !important;
+}
+.border-brand-primary {
+  border-color: var(--color-primary) !important;
+}
+.bg-brand-secondary {
+  background-color: var(--color-secondary) !important;
+}
+
+/* ── Dynamic brand color overrides ──────────────────────────
+   The shop's markup uses fixed #7FAF8E / #6A9B7D / #DDEBE7 classes. These rules
+   repaint them with the theme colours. [class~="…"] matches a whole class name,
+   so "hover:bg-[#7FAF8E]" only applies on hover (a substring match applied it always).
+─────────────────────────────────────────────────────────── */
+
+/* Backgrounds */
+[class~="bg-[#7FAF8E]"],
+[class~="hover:bg-[#7FAF8E]"]:hover { background-color: var(--color-primary) !important; }
+[class~="bg-[#6A9B7D]"],
+[class~="bg-[#6a9a79]"],
+[class~="hover:bg-[#6A9B7D]"]:hover,
+[class~="hover:bg-[#6a9a79]"]:hover { background-color: color-mix(in srgb, var(--color-primary) 85%, black) !important; }
+[class~="bg-[#DDEBE7]"],
+[class~="hover:bg-[#DDEBE7]"]:hover { background-color: var(--color-secondary) !important; }
+
+/* Text */
+[class~="text-[#7FAF8E]"],
+[class~="hover:text-[#7FAF8E]"]:hover,
+.group:hover [class~="group-hover:text-[#7FAF8E]"] { color: var(--color-primary) !important; }
+[class~="hover:text-[#6A9B7D]"]:hover,
+[class~="hover:text-[#6a9a79]"]:hover { color: color-mix(in srgb, var(--color-primary) 85%, black) !important; }
+
+/* Borders */
+[class~="border-[#7FAF8E]"],
+[class~="hover:border-[#7FAF8E]"]:hover,
+[class~="focus:border-[#7FAF8E]"]:focus { border-color: var(--color-primary) !important; }
+[class~="border-[#DDEBE7]"] { border-color: var(--color-secondary) !important; }
+
+/* Light brand tint (#AFC8B8): borders, focus rings, small labels */
+[class~="bg-[#AFC8B8]"] { background-color: color-mix(in srgb, var(--color-primary) 45%, white) !important; }
+[class~="text-[#AFC8B8]"] { color: color-mix(in srgb, var(--color-primary) 70%, white) !important; }
+[class~="border-[#AFC8B8]"],
+[class~="hover:border-[#AFC8B8]"]:hover,
+[class~="focus:border-[#AFC8B8]"]:focus,
+.group:hover [class~="group-hover:border-[#AFC8B8]"] { border-color: color-mix(in srgb, var(--color-primary) 45%, white) !important; }
+[class~="ring-[#AFC8B8]"],
+[class~="focus:ring-[#AFC8B8]"]:focus { --tw-ring-color: color-mix(in srgb, var(--color-primary) 45%, white) !important; }
+[class~="to-[#AFC8B8]"] { --tw-gradient-to: color-mix(in srgb, var(--color-primary) 45%, white) var(--tw-gradient-to-position) !important; }
+
+/* Rings, gradients, shadows, form accents */
+[class~="ring-[#DDEBE7]"],
+[class~="focus:ring-[#DDEBE7]"]:focus { --tw-ring-color: var(--color-secondary) !important; }
+[class~="from-[#7FAF8E]"] { --tw-gradient-from: var(--color-primary) var(--tw-gradient-from-position) !important; }
+[class~="hover:from-[#6A9B7D]"]:hover { --tw-gradient-from: color-mix(in srgb, var(--color-primary) 85%, black) var(--tw-gradient-from-position) !important; }
+[class~="to-[#DDEBE7]"] { --tw-gradient-to: var(--color-secondary) var(--tw-gradient-to-position) !important; }
+[class~="shadow-[#7FAF8E]/20"] { --tw-shadow-color: color-mix(in srgb, var(--color-primary) 20%, transparent) !important; }
+[class~="accent-[#7FAF8E]"] { accent-color: var(--color-primary) !important; }
+
+/* Keyboard focus: a clear brand-coloured outline on anything focusable (mouse clicks don't show it) */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center rounded-xl font-medium transition-colors;
+  }
+  
+  .btn-primary {
+    @apply bg-primary-500 text-white hover:bg-primary-600 shadow-lg shadow-primary-500/20;
+  }
+  
+  .btn-secondary {
+    @apply bg-cream-300 text-text-primary hover:bg-cream-400;
+  }
+  
+  .btn-outline {
+    @apply border-2 border-primary-500 text-primary-500 hover:bg-primary-50;
+  }
+  
+  .card {
+    @apply bg-white rounded-2xl shadow-sm overflow-hidden;
+  }
+  
+  .card-cream {
+    @apply bg-cream-300 rounded-2xl shadow-sm overflow-hidden;
+  }
+  
+  .card-hover {
+    @apply transition-shadow hover:shadow-lg;
+  }
+  
+  .section-bg {
+    @apply bg-bg-secondary;
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F7F7F5;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #DDEBE7;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #C1E5DB;
+}
+
+/* Admin: thin neutral scrollbars that follow light/dark mode (not the shop's green). */
+.admin-ui ::-webkit-scrollbar { width: 10px; height: 10px; }
+.admin-ui ::-webkit-scrollbar-track { background: transparent; }
+.admin-ui ::-webkit-scrollbar-thumb { background: var(--a-border); border-radius: 999px; border: 3px solid transparent; background-clip: padding-box; }
+.admin-ui ::-webkit-scrollbar-thumb:hover { background: var(--a-muted, var(--a-border)); background-clip: padding-box; }
+.admin-ui * { scrollbar-color: var(--a-border) transparent; scrollbar-width: thin; }
+
+/* Page width for every shop page (Medusa storefront): fluid up to 1440px with 16px
+   side padding on phones and 24px from 640px. Narrow pages add max-w-*. */
+@layer components {
+  .content-container { width: 100%; max-width: 1440px; margin-inline: auto; padding-inline: 16px; }
+  @media (min-width: 640px) { .content-container { padding-inline: 24px; } }
+}
+
+/* ── Admin (Medusa-style) ────────────────────────────────────
+   Tokens used by src/components/admin/* (Tailwind `ui-*` colours). Sizes follow the
+   Medusa dashboard: 13px text, 32px controls, 8px cards, 220px sidebar. */
+.admin-ui {
+  --a-bg: #fafafa;          /* page */
+  --a-base: #ffffff;        /* cards */
+  --a-hover: #f4f4f5;
+  --a-field: #fafafa;
+  --a-border: #e4e4e7;
+  --a-fg: #18181b;
+  --a-fg-subtle: #52525b;
+  --a-fg-muted: #a1a1aa;
+  --a-inverted: #27272a;    /* primary buttons */
+  --a-inverted-fg: #ffffff;
+  --a-card: 0 0 0 1px rgba(0,0,0,.08), 0 1px 2px -1px rgba(0,0,0,.08), 0 2px 4px rgba(0,0,0,.04);
+  --a-field-ring: 0 0 0 1px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+  --a-modal: 0 0 0 1px rgba(0,0,0,.08), 0 8px 16px rgba(0,0,0,.08), 0 16px 32px rgba(0,0,0,.08);
+  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--a-fg);
+  background: var(--a-bg);
+  -webkit-font-smoothing: antialiased;
+}
+.admin-ui.admin-dark {
+  color-scheme: dark;
+  --a-bg: #18181b;
+  --a-base: #212124;
+  --a-hover: #2a2a2e;
+  --a-field: #27272a;
+  --a-border: #2e2e32;
+  --a-fg: #fafafa;
+  --a-fg-subtle: #a1a1aa;
+  --a-fg-muted: #71717a;
+  --a-inverted: #fafafa;
+  --a-inverted-fg: #18181b;
+  --a-card: 0 0 0 1px rgba(255,255,255,.08), 0 1px 2px rgba(0,0,0,.4);
+  --a-field-ring: 0 0 0 1px rgba(255,255,255,.1);
+  --a-modal: 0 0 0 1px rgba(255,255,255,.1), 0 16px 32px rgba(0,0,0,.5);
+}
+
+/* Older admin screens written with the shop's roomier classes: map them onto the
+   same density so every page matches (cards 8px, headings 18px/500, fields 32px). */
+.admin-ui main .rounded-2xl, .admin-ui main .rounded-3xl { border-radius: 8px; }
+.admin-ui main .rounded-xl { border-radius: 6px; }
+.admin-ui main .shadow-sm, .admin-ui main .shadow { box-shadow: var(--a-card); }
+.admin-ui main .bg-white { background-color: var(--a-base); }
+.admin-ui main .bg-gray-50 { background-color: var(--a-bg); }
+.admin-ui main .text-2xl { font-size: 18px; line-height: 28px; }
+.admin-ui main .text-xl { font-size: 16px; line-height: 24px; }
+.admin-ui main .text-lg { font-size: 14px; line-height: 20px; }
+.admin-ui main .text-base { font-size: 13px; line-height: 20px; }
+.admin-ui main .text-sm { font-size: 13px; line-height: 20px; }
+.admin-ui main h1.font-bold, .admin-ui main h2.font-bold, .admin-ui main h1.font-semibold,
+.admin-ui main h2.font-semibold, .admin-ui main h3.font-semibold { font-weight: 500; }
+.admin-ui main .space-y-6 > :not([hidden]) ~ :not([hidden]) { margin-top: 12px; }
+.admin-ui main .gap-6 { gap: 12px; }
+.admin-ui main .p-6 { padding: 16px 24px; }
+.admin-ui main input:not([type=checkbox]):not([type=radio]):not([type=color]):not([type=range]):not([type=file]):not(.ui-field),
+.admin-ui main select:not(.ui-field) {
+  min-height: 32px; padding-top: 6px; padding-bottom: 6px; padding-left: 8px; padding-right: 8px;
+  font-size: 13px; line-height: 20px; border-radius: 6px; background-color: var(--a-field);
+  border-color: var(--a-border);
+}
+
+.admin-ui main textarea:not(.ui-field) { font-size: 13px; padding: 6px 8px; border-radius: 6px; background-color: var(--a-field); border-color: var(--a-border); }
+.admin-ui main table th { font-size: 13px; font-weight: 500; height: 40px; padding-top: 0; padding-bottom: 0; }
+.admin-ui main table td { font-size: 13px; padding-top: 10px; padding-bottom: 10px; }
+.admin-ui main .text-gray-900, .admin-ui main .text-gray-800 { color: var(--a-fg); }
+.admin-ui main .text-gray-700, .admin-ui main .text-gray-600 { color: var(--a-fg-subtle); }
+.admin-ui main .text-gray-500, .admin-ui main .text-gray-400 { color: var(--a-fg-muted); }
+.admin-ui main .border-gray-100, .admin-ui main .border-gray-200 { border-color: var(--a-border); }
+.admin-ui main .divide-gray-50 > * + *, .admin-ui main .divide-gray-100 > * + * { border-color: var(--a-border); }
+.admin-ui main .hover\:bg-gray-50:hover { background-color: var(--a-hover); }
+.admin-ui main .bg-gray-100 { background-color: var(--a-hover); }
+.admin-ui.admin-dark main .bg-gray-200 { background-color: var(--a-border); }
+.admin-ui.admin-dark main .border-t, .admin-ui.admin-dark main .border-b, .admin-ui.admin-dark main .border { border-color: var(--a-border); }
+.admin-ui.admin-dark main input, .admin-ui.admin-dark main select, .admin-ui.admin-dark main textarea { color: var(--a-fg); }
+.admin-ui.admin-dark main table thead tr { background-color: var(--a-bg); }
+/* Older screens' accent buttons take the admin's primary (dark) button colour */
+.admin-ui main .bg-primary-500 { background-color: var(--a-inverted); color: var(--a-inverted-fg); }
+.admin-ui main .hover\:bg-primary-600:hover { background-color: var(--a-inverted); opacity: .9; }

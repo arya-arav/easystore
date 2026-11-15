@@ -1,0 +1,35 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "easystore",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [
+    { "binding": "WORKER_SELF_REFERENCE", "service": "easystore" }
+  ],
+  // Product images. Served publicly from R2_PUBLIC_URL (a custom domain on this bucket).
+  "r2_buckets": [
+    { "binding": "IMAGES_BUCKET", "bucket_name": "easystore-images" }
+  ],
+  // Cloudflare Images: used by next/image optimisation and by the URL-import resizer.
+  "images": { "binding": "IMAGES" },
+  "observability": { "enabled": true },
+  // Run the Worker in the database's region (Neon, aws ap-southeast-1) instead of near
+  // each visitor, so the several queries per page don't each cross continents. Smart
+  // placement didn't pick this up because Neon is reached over a WebSocket, not fetch.
+  "placement": { "mode": "targeted", "region": "aws:ap-southeast-1" },
+  // Non-secret config. Secrets (DATABASE_URL, NEXTAUTH_SECRET, RAZORPAY_*, GOOGLE_*,
+  // STRIPE_*, WHATSAPP_API_KEY) go in with `wrangler secret put <NAME>`,
+  // and in .dev.vars for local preview.
+  "vars": {
+    "NEXTAUTH_URL": "https://your-domain.com",
+    "NEXT_PUBLIC_APP_URL": "https://your-domain.com",
+    "R2_PUBLIC_URL": "https://images.your-domain.com"
+  },
+  // Tip: redirect www.your-domain.com to the bare domain with a Cloudflare Redirect Rule.
+  "routes": [{ "pattern": "your-domain.com", "custom_domain": true }]
+}
