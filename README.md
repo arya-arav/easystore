@@ -66,4 +66,4 @@ Or without Docker: see [docs/development.md](docs/development.md).
 
 ## License
 
-MIT
+[Apache License 2.0](LICENSE). You can use, modify and sell stores built with EasyStore, including commercially. Keep the licence and [NOTICE](NOTICE) file, and mark files you change. The EasyStore name is not included in the licence.
