@@ -34,6 +34,22 @@ export async function rateLimit(
   }
 }
 
+/** True when `key` already used up its window, without counting this check (fails open). */
+export async function isRateLimited(key: string, maxRequests: number): Promise<boolean> {
+  try {
+    const row = await prisma.rateLimit.findUnique({ where: { key } });
+    return !!row && row.resetAt > new Date() && row.count >= maxRequests;
+  } catch (e) {
+    console.error('isRateLimited: limiter unavailable:', e instanceof Error ? e.message : e);
+    return false;
+  }
+}
+
+/** Clears a window, e.g. failed logins after a successful one. */
+export async function resetRateLimit(key: string): Promise<void> {
+  await prisma.rateLimit.deleteMany({ where: { key } }).catch(() => {});
+}
+
 /** Deletes expired windows. */
 export async function clearExpiredRateLimits(): Promise<number> {
   const { count } = await prisma.rateLimit.deleteMany({ where: { resetAt: { lt: new Date() } } });
@@ -44,10 +60,17 @@ export async function clearExpiredRateLimits(): Promise<number> {
 // faked; X-Forwarded-For is only a fallback for other hosts (Vercel/Docker behind a proxy),
 // since a visitor can send their own value in it.
 export function getClientIp(request: Request): string {
-  const h = request.headers;
-  const ip =
-    h.get('cf-connecting-ip') ||
-    h.get('x-real-ip') ||
-    h.get('x-forwarded-for')?.split(',')[0];
+  return clientIpFromHeaders(request.headers);
+}
+
+/** Same, for a Headers object or the plain header object NextAuth passes to authorize(). */
+export function clientIpFromHeaders(headers: Headers | Record<string, unknown> | undefined): string {
+  const get = (name: string): string | undefined => {
+    if (!headers) return undefined;
+    if (headers instanceof Headers) return headers.get(name) || undefined;
+    const v = headers[name];
+    return typeof v === 'string' ? v : Array.isArray(v) ? String(v[0]) : undefined;
+  };
+  const ip = get('cf-connecting-ip') || get('x-real-ip') || get('x-forwarded-for')?.split(',')[0];
   return ip?.trim() || 'unknown';
 }

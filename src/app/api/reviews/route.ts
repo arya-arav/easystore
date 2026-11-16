@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { rateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,6 +12,8 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Please log in to write a review' }, { status: 401 });
     }
+    // Spam guard: 5 reviews per account per hour
+    if (!(await rateLimit(`review:${session.user.id}`, 5, 60 * 60 * 1000)).allowed) return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
 
     const { productId, rating, title, comment, images } = await request.json();
 

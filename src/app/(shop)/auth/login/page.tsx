@@ -56,7 +56,9 @@ function LoginForm() {
     e.preventDefault();
     setError(''); setLoading(true);
     const result = await signIn('credentials', { email, password, redirect: false });
-    if (result?.error) {
+    if (result?.error === 'TOO_MANY_ATTEMPTS') {
+      setError('Too many sign-in attempts. Please wait 15 minutes, or sign in with a code instead.');
+    } else if (result?.error) {
       const check = await fetch('/api/auth/check-verified', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
