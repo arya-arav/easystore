@@ -8,7 +8,7 @@ import { rateLimit, getClientIp } from '@/lib/rate-limit';
 export async function POST(request: Request) {
   // Rate limit: 3 password reset requests per IP per 15 minutes
   const ip = getClientIp(request);
-  const { allowed } = rateLimit(`forgot-pw:${ip}`, 3, 15 * 60 * 1000);
+  const { allowed } = await rateLimit(`forgot-pw:${ip}`, 3, 15 * 60 * 1000);
   if (!allowed) {
     return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
   }

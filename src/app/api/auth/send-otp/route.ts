@@ -88,7 +88,7 @@ async function sendWhatsAppOtp(phone: string, otp: string, purpose: string) {
 export async function POST(request: NextRequest) {
   // Rate limit: 3 OTPs per IP per 10 minutes
   const ip = getClientIp(request);
-  const { allowed, resetIn } = rateLimit(`send-otp:${ip}`, 3, 10 * 60 * 1000);
+  const { allowed, resetIn } = await rateLimit(`send-otp:${ip}`, 3, 10 * 60 * 1000);
   if (!allowed) {
     const secs = Math.ceil(resetIn / 1000);
     return NextResponse.json({ error: `Too many OTP requests. Try again in ${secs} seconds.` }, { status: 429 });
