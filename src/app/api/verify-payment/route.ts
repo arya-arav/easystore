@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { markOrderPaid } from '@/lib/order-payments';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 
@@ -28,9 +29,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid payment signature' }, { status: 400 });
     }
 
-    // Find the customer's order from the Razorpay order id saved by /api/create-payment
+    // Find the customer's order from the Razorpay order id saved by /api/create-payment.
+    // Only Razorpay orders: the same field holds Stripe's checkout id for card orders.
     const existing = await prisma.order.findFirst({
-      where: { orderId: razorpay_order_id, userId: session.user.id },
+      where: { orderId: razorpay_order_id, userId: session.user.id, paymentMethod: { in: ['RAZORPAY', 'UPI'] } },
       select: { id: true },
     });
     if (!existing) {
@@ -38,24 +40,9 @@ export async function POST(request: NextRequest) {
     }
     const orderId = existing.id;
 
-    // Update order status
-    const order = await prisma.order.update({
-      where: { id: orderId },
-      data: {
-        paymentStatus: 'COMPLETED',
-        paymentId: razorpay_payment_id,
-        status: 'CONFIRMED',
-      },
-    });
-
-    // Create status history
-    await prisma.orderStatusHistory.create({
-      data: {
-        orderId,
-        status: 'CONFIRMED',
-        note: 'Payment verified via Razorpay',
-      },
-    });
+    // Once only, even when the webhook already recorded it
+    await markOrderPaid(orderId, razorpay_payment_id, 'Payment verified via Razorpay');
+    const order = await prisma.order.findUnique({ where: { id: orderId } });
 
     return NextResponse.json({ success: true, order });
   } catch (error: any) {

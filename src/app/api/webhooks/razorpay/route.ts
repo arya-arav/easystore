@@ -1,8 +1,8 @@
 import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
-
-import crypto from 'crypto';
 import { applyOrderStatusRewards } from '@/lib/order-rewards';
+import { markOrderPaid } from '@/lib/order-payments';
+import { hmacMatches } from '@/lib/razorpay';
 
 
 
@@ -12,19 +12,18 @@ export async function POST(request: NextRequest) {
     const body = await request.text();
     const signature = request.headers.get('x-razorpay-signature');
 
-    // Verify webhook signature
+    // Verify webhook signature. Without a secret, refuse everything: an empty secret
+    // would let anyone sign a "payment captured" event for any order.
     const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET || '';
-    const expectedSignature = crypto
-      .createHmac('sha256', webhookSecret)
-      .update(body)
-      .digest('hex');
-
-    if (signature !== expectedSignature) {
+    if (!webhookSecret) {
+      return NextResponse.json({ error: 'Webhook not configured' }, { status: 500 });
+    }
+    if (!hmacMatches(webhookSecret, body, signature)) {
       return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
     }
 
     const event = JSON.parse(body);
-    const { entity, payload } = event;
+    const { payload } = event;
 
     // Handle different webhook events
     switch (event.event) {
@@ -33,23 +32,8 @@ export async function POST(request: NextRequest) {
         const orderId = payment.notes?.order_id;
 
         if (orderId) {
-          await prisma.order.update({
-            where: { id: orderId },
-            data: {
-              paymentStatus: 'COMPLETED',
-              paymentId: payment.id,
-              status: 'CONFIRMED',
-            },
-          });
-
-          // Create status history
-          await prisma.orderStatusHistory.create({
-            data: {
-              orderId,
-              status: 'CONFIRMED',
-              note: 'Payment captured via Razorpay',
-            },
-          });
+          // Once only, even when the return page already recorded it
+          await markOrderPaid(orderId, payment.id, 'Payment captured via Razorpay');
         }
         break;
       }
@@ -59,8 +43,9 @@ export async function POST(request: NextRequest) {
         const orderId = payment.notes?.order_id;
 
         if (orderId) {
-          await prisma.order.update({
-            where: { id: orderId },
+          // A failed retry must not undo a payment that already went through
+          await prisma.order.updateMany({
+            where: { id: orderId, paymentStatus: { not: 'COMPLETED' } },
             data: {
               paymentStatus: 'FAILED',
               paymentId: payment.id,
