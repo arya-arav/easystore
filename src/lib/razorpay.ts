@@ -1,3 +1,5 @@
+import { createHmac, timingSafeEqual } from 'crypto';
+
 // Razorpay integration
 
 export const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || '';
@@ -29,20 +31,24 @@ export async function createRazorpayOrder(amount: number, receipt: string, notes
   return response.json();
 }
 
-// Verify Razorpay Payment Signature
+// Verify Razorpay Payment Signature. False when the key secret isn't set: an empty
+// secret would let anyone compute a "valid" signature.
 export function verifyRazorpaySignature(
   orderId: string,
   paymentId: string,
   signature: string
 ): boolean {
-  const crypto = require('crypto');
-  const body = `${orderId}|${paymentId}`;
-  const expectedSignature = crypto
-    .createHmac('sha256', RAZORPAY_KEY_SECRET)
-    .update(body)
-    .digest('hex');
+  const secret = process.env.RAZORPAY_KEY_SECRET || '';
+  if (!secret || !orderId || !paymentId || typeof signature !== 'string') return false;
+  return hmacMatches(secret, `${orderId}|${paymentId}`, signature);
+}
 
-  return expectedSignature === signature;
+/** Constant-time check that `signature` (hex) is the HMAC-SHA256 of `body` under `secret`. */
+export function hmacMatches(secret: string, body: string, signature: string | null | undefined): boolean {
+  if (!secret || !signature) return false;
+  const expected = createHmac('sha256', secret).update(body).digest();
+  const given = Buffer.from(signature, 'hex');
+  return given.length === expected.length && timingSafeEqual(given, expected);
 }
 
 // Fetch Payment Details
