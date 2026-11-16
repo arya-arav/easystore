@@ -817,3 +817,13 @@ model DemoItem {
 
   @@unique([model, recordId])
 }
+
+/// Shared rate-limit windows (src/lib/rate-limit.ts), e.g. key "send-otp:<ip>".
+/// Expired rows are cleared by the limiter itself, now and then.
+model RateLimit {
+  key     String   @id
+  count   Int
+  resetAt DateTime
+
+  @@index([resetAt])
+}

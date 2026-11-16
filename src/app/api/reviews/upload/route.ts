@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { isR2Configured, uploadBufferToR2 } from '@/lib/r2-upload';
+import { rateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,6 +18,8 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) return NextResponse.json({ error: 'Please log in to add photos' }, { status: 401 });
+    // 15 photo uploads per account per hour
+    if (!(await rateLimit(`review-upload:${session.user.id}`, 15, 60 * 60 * 1000)).allowed) return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
     if (!isR2Configured()) return NextResponse.json({ error: 'Photo uploads are not available' }, { status: 503 });
 
     const form = await request.formData();

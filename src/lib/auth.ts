@@ -5,6 +5,9 @@ import GoogleProvider from 'next-auth/providers/google';
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
+import { rateLimit, isRateLimited, resetRateLimit, clientIpFromHeaders } from '@/lib/rate-limit';
+
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 
 const prismaAdapter = PrismaAdapter(prisma) as any;
 
@@ -62,9 +65,16 @@ export const authOptions: NextAuthOptions = {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.email || !credentials?.password) {
           return null;
+        }
+
+        // Password guessing: 10 attempts per IP and 5 failures per account, per 15 minutes
+        const ip = clientIpFromHeaders(req?.headers as Record<string, unknown> | undefined);
+        const accountKey = `login-fail:${credentials.email.trim().toLowerCase()}`;
+        if (!(await rateLimit(`login-ip:${ip}`, 10, LOGIN_WINDOW_MS)).allowed || (await isRateLimited(accountKey, 5))) {
+          throw new Error('TOO_MANY_ATTEMPTS');
         }
 
         const user = await prisma.user.findUnique({
@@ -72,6 +82,7 @@ export const authOptions: NextAuthOptions = {
         });
 
         if (!user || !user.password) {
+          await rateLimit(accountKey, 5, LOGIN_WINDOW_MS);
           return null;
         }
 
@@ -81,8 +92,10 @@ export const authOptions: NextAuthOptions = {
         );
 
         if (!isPasswordValid) {
+          await rateLimit(accountKey, 5, LOGIN_WINDOW_MS);
           return null;
         }
+        await resetRateLimit(accountKey);
 
         // Block login if email not verified (skip for ADMIN/SELLER)
         if (!user.emailVerified && user.role === 'CUSTOMER') {

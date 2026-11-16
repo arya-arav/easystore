@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const paid = checkout.payment_status === 'paid' && checkout.metadata?.order_id === order.id;
     if (paid) await markOrderPaid(order.id, checkout.payment_intent || checkout.id, 'Card payment received via Stripe');
     return NextResponse.json({ paid });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Stripe verify error:', error);
     return NextResponse.json({ paid: false, error: 'Could not check payment' }, { status: 500 });
   }

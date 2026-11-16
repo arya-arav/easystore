@@ -62,9 +62,9 @@ export async function POST(request: NextRequest) {
       : await prisma.cartItem.create({ data: { ...key, quantity: qty } });
 
     return NextResponse.json(item, { status: existing ? 200 : 201 });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Cart POST error:', error);
-    return NextResponse.json({ error: error.message || 'Failed to add to cart' }, { status: 500 });
+    return NextResponse.json({ error: 'Could not add to cart. Please try again.' }, { status: 500 });
   }
 }
 

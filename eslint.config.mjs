@@ -9,6 +9,10 @@ export default [
       // rules flag them as style issues, so they are reported but don't fail lint.
       'react-hooks/set-state-in-effect': 'warn',
       'react-hooks/immutability': 'warn',
+      // Pictures are plain <img> on purpose: thumbSrc() (lib/image-hosts) already serves a
+      // resized copy through Cloudflare Images, and banners/hero use their own srcset.
+      // next/image would add a client component and layout wrappers for no gain.
+      '@next/next/no-img-element': 'off',
     },
   },
   { ignores: ['.next/**', '.open-next/**', '.wrangler/**', 'node_modules/**', 'cloudflare-env.d.ts'] },

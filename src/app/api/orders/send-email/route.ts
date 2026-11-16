@@ -9,8 +9,8 @@ export async function POST(request: Request) {
     const { type, orderId } = await request.json();
     if (type !== 'orderConfirmation' && type !== 'orderShipped') return NextResponse.json({ error: 'Invalid email type' }, { status: 400 });
     return NextResponse.json(await sendOrderEmail(type, String(orderId)));
-  } catch (error: any) {
+  } catch (error) {
     console.error('Send order email error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Could not send the email' }, { status: 500 });
   }
 }

@@ -32,7 +32,7 @@ async function stripeRequest<T>(method: 'GET' | 'POST', path: string, params?: R
     },
     body: method === 'POST' && params ? encode(params) : undefined,
   });
-  const data = (await res.json()) as any;
+  const data = (await res.json()) as T & { error?: { message?: string } };
   if (!res.ok) throw new Error(data?.error?.message || `Stripe error ${res.status}`);
   return data as T;
 }
@@ -88,6 +88,12 @@ export function retrieveCheckoutSession(id: string) {
   return stripeRequest<CheckoutSession>('GET', `/checkout/sessions/${encodeURIComponent(id)}`);
 }
 
+/** The parts of a Stripe event this store reads (Checkout Session events). */
+export interface StripeEvent {
+  type: string;
+  data: { object: Partial<CheckoutSession> & { metadata?: Record<string, string> } };
+}
+
 /** Verifies a Stripe-Signature header (v1 scheme) and returns the parsed event, or null. */
 export function verifyWebhook(rawBody: string, signatureHeader: string | null, secret: string, toleranceSeconds = 300) {
   if (!signatureHeader) return null;
@@ -108,5 +114,5 @@ export function verifyWebhook(rawBody: string, signatureHeader: string | null, s
     const b = Buffer.from(expected, 'hex');
     return a.length === b.length && timingSafeEqual(a, b);
   });
-  return valid ? (JSON.parse(rawBody) as { type: string; data: { object: any } }) : null;
+  return valid ? (JSON.parse(rawBody) as StripeEvent) : null;
 }

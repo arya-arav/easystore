@@ -8,6 +8,7 @@ import { useCart } from '@/lib/cart-context';
 import { useShopActions } from '@/lib/shop-actions';
 import { useMoney } from '@/lib/currency-context';
 import { AccountHeader, accountButton } from '@/components/account/ui';
+import { thumbSrc } from '@/lib/image-hosts';
 
 
 export default function WishlistPage() {
@@ -40,7 +41,7 @@ export default function WishlistPage() {
               <Link href={`/products/${item.slug}`}>
                 <div className="aspect-square bg-[#F8F6F2]">
                   {item.image
-                    ? <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                    ? <img src={thumbSrc(item.image, 384)} loading="lazy" alt={item.name} className="w-full h-full object-cover" />
                     : <div className="w-full h-full flex items-center justify-center text-4xl">{<ShopEmoji />}</div>}
                 </div>
               </Link>

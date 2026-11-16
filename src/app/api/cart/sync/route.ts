@@ -20,8 +20,8 @@ export async function POST(request: NextRequest) {
     const { items } = await request.json();
     const lines: { productId: string; variant: string; quantity: number }[] = (Array.isArray(items) ? items : [])
       .slice(0, 100)
-      .filter((i: any) => typeof i?.productId === 'string')
-      .map((i: any) => ({ productId: i.productId, variant: normalizeVariant(i.variant), quantity: Math.max(1, Math.min(99, Number(i.quantity) || 1)) }));
+      .filter((i: unknown): i is { productId: string; variant?: unknown; quantity?: unknown } => typeof (i as { productId?: unknown })?.productId === 'string')
+      .map((i) => ({ productId: i.productId, variant: normalizeVariant(i.variant), quantity: Math.max(1, Math.min(99, Number(i.quantity) || 1)) }));
 
     if (lines.length > 0) {
       const available = new Set(

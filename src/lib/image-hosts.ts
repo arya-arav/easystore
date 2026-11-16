@@ -12,3 +12,27 @@ export function isOwnImage(url?: string | null): boolean {
     return false;
   }
 }
+
+// Outside hosts allowed in next.config.mjs images.remotePatterns (keep the two in step)
+const OPTIMISED_HOSTS = [/(^|\.)unsplash\.com$/, /^res\.cloudinary\.com$/];
+
+/** True when the image optimiser can resize this picture (our own or an allowed host). */
+export function canOptimise(src: string): boolean {
+  if (!src || src.endsWith('.svg') || src.startsWith('data:') || src.startsWith('blob:')) return false;
+  if (isOwnImage(src)) return true;
+  try {
+    return OPTIMISED_HOSTS.some((re) => re.test(new URL(src).hostname));
+  } catch {
+    return false;
+  }
+}
+
+// Widths the optimiser accepts (Next's default imageSizes + deviceSizes)
+const WIDTHS = [64, 96, 128, 256, 384, 640, 750, 828, 1080, 1200, 1920];
+
+/** A small, WebP/AVIF copy of a picture for plain <img> thumbnails (checkout, account, search). */
+export function thumbSrc(src: string, width: number): string {
+  if (!canOptimise(src)) return src;
+  const w = WIDTHS.find((x) => x >= width) || 1920;
+  return `/_next/image?url=${encodeURIComponent(src)}&w=${w}&q=75`;
+}

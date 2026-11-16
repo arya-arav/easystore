@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { CheckCircle, MapPin, CreditCard, Package, ArrowRight, ShoppingBag } from 'lucide-react';
 import { convertFromInr, formatMoney } from '@/lib/markets';
 import { PAYMENT_LABELS, UpiPaymentDetails, type PaymentMethodId, type PublicPaymentSettings } from '@/components/checkout/payment-methods';
+import { thumbSrc } from '@/lib/image-hosts';
 
 interface OrderItem {
   id: string;
@@ -220,7 +221,7 @@ export default function SuccessPage() {
                     <div key={item.id} className="flex items-center gap-3 p-3 bg-[#F7F7F5] rounded-xl">
                       <div className="w-14 h-14 bg-[#EDE8DF] rounded-xl overflow-hidden flex-shrink-0">
                         {(item.productImage || item.product?.images?.[0]?.url)
-                          ? <img src={item.productImage || item.product?.images?.[0]?.url} alt={item.productName} className="w-full h-full object-cover" />
+                          ? <img src={thumbSrc(item.productImage || item.product?.images?.[0]?.url || '', 128)} loading="lazy" alt={item.productName} className="w-full h-full object-cover" />
                           : <div className="w-full h-full flex items-center justify-center text-2xl">{<ShopEmoji />}</div>}
                       </div>
                       <div className="flex-1 min-w-0">

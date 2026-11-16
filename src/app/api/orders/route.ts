@@ -214,9 +214,11 @@ export async function POST(request: NextRequest) {
     // Loyalty points and referral rewards are credited when the order is delivered (src/lib/order-rewards.ts).
 
     return NextResponse.json(order, { status: 201 });
-  } catch (error: any) {
+  } catch (error) {
+    // Log the details; database errors can contain internals customers shouldn't see
+    console.error('Create order error:', error);
     return NextResponse.json(
-      { error: error.message || 'Failed to create order' },
+      { error: 'We couldn’t place your order. Please try again.' },
       { status: 500 }
     );
   }

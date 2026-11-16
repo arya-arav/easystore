@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { fuzzyProductIds } from '@/lib/fuzzy-search';
 
@@ -85,7 +86,7 @@ export async function queryProducts(q: ProductQuery) {
     if (maxStr) where.price.lte = parseFloat(maxStr);
   }
 
-  let orderBy: any[];
+  let orderBy: Prisma.ProductOrderByWithRelationInput[];
   switch (q.sort) {
     case 'price-low':
       orderBy = [{ price: 'asc' }];
