@@ -1,3 +1,4 @@
+import type { OrderStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 import { requireStaff } from '@/lib/admin-auth';
@@ -5,7 +6,7 @@ import { requireStaff } from '@/lib/admin-auth';
 export const dynamic = 'force-dynamic';
 
 const DAY = 86_400_000;
-const ENDED = ['CANCELLED', 'REFUNDED', 'RETURNED'] as any;
+const ENDED: OrderStatus[] = ['CANCELLED', 'REFUNDED', 'RETURNED'];
 
 // GET - dashboard figures: last 30 days against the 30 before, plus things needing attention
 export async function GET() {

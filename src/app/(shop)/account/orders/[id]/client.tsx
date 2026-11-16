@@ -8,6 +8,7 @@ import { formatOrderMoney } from '@/lib/markets';
 import { ReturnRequest } from '@/components/account/return-request';
 import { OrderActions } from '@/components/account/order-actions';
 import { AccountHeader, AccountSection, StatusPill, accountButton } from '@/components/account/ui';
+import { thumbSrc } from '@/lib/image-hosts';
 
 interface OrderItem {
   id: string;
@@ -141,7 +142,7 @@ export function OrderDetailClient({ orderId }: { orderId: string }) {
           {order.items.map((item) => (
             <li key={item.id} className="flex items-center gap-4 py-3 first:pt-0">
               <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-gray-50">
-                {item.product?.images?.[0]?.url ? <img src={item.product.images[0].url} alt="" className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-xl">{<ShopEmoji />}</div>}
+                {item.product?.images?.[0]?.url ? <img src={thumbSrc(item.product.images[0].url, 128)} loading="lazy" alt="" className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-xl">{<ShopEmoji />}</div>}
               </div>
               <div className="min-w-0 flex-1">
                 {item.product ? (

@@ -7,6 +7,7 @@ import { ChevronRight, Heart, MapPin, Package, ShoppingBag, Star } from 'lucide-
 import { AccountHeader, AccountSection, StatusPill, accountButton } from '@/components/account/ui';
 import { formatOrderMoney } from '@/lib/markets';
 import { useCart } from '@/lib/cart-context';
+import { thumbSrc } from '@/lib/image-hosts';
 
 interface User { id: string; email: string; name?: string | null; role: string }
 interface OrderSummary {
@@ -98,7 +99,7 @@ export function DashboardClient({ user }: { user: User }) {
                   <div className="flex -space-x-3">
                     {o.items.slice(0, 2).map((it) => (
                       <span key={it.id} className="h-12 w-12 overflow-hidden rounded-xl border-2 border-white bg-bg-primary">
-                        {it.product?.images?.[0]?.url ? <img src={it.product.images[0].url} alt="" className="h-full w-full object-cover" /> : <span className="flex h-full items-center justify-center">{<ShopEmoji />}</span>}
+                        {it.product?.images?.[0]?.url ? <img src={thumbSrc(it.product.images[0].url, 128)} loading="lazy" alt="" className="h-full w-full object-cover" /> : <span className="flex h-full items-center justify-center">{<ShopEmoji />}</span>}
                       </span>
                     ))}
                   </div>

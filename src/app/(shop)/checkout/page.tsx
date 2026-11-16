@@ -12,6 +12,7 @@ import { useMoney } from '@/lib/currency-context';
 import { COUNTRIES, HOME_COUNTRY, countryName, toCountryCode } from '@/lib/markets';
 import { GuestSignIn } from '@/components/checkout/guest-sign-in';
 import { PAYMENT_LABELS, PaymentMethodPicker, type PaymentMethodId, type PublicPaymentSettings } from '@/components/checkout/payment-methods';
+import { thumbSrc } from '@/lib/image-hosts';
 
 declare global {
   interface Window {
@@ -961,7 +962,7 @@ export default function CheckoutPage() {
                   <div key={item.id} className="flex gap-3">
                     <div className="w-16 h-16 bg-[#F8F6F2] rounded-lg overflow-hidden flex-shrink-0">
                       {(item.product.primaryImage || item.product.images?.[0]?.url) && (
-                        <img src={item.product.primaryImage || item.product.images?.[0]?.url} alt={item.product.name} className="w-full h-full object-cover" />
+                        <img src={thumbSrc(item.product.primaryImage || item.product.images?.[0]?.url || '', 128)} loading="lazy" alt={item.product.name} className="w-full h-full object-cover" />
                       )}
                     </div>
                     <div className="flex-1">

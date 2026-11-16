@@ -52,9 +52,10 @@ export async function POST(request: NextRequest) {
         email: session.user.email,
       },
     });
-  } catch (error: any) {
+  } catch (error) {
+    console.error('Razorpay create payment error:', error);
     return NextResponse.json(
-      { error: error.message || 'Failed to create payment order' },
+      { error: 'Could not start the payment. Please try again.' },
       { status: 500 }
     );
   }

@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     } else {
       const items: { productId: string; quantity: number }[] = (Array.isArray(body.items) ? body.items : [])
         .slice(0, 100)
-        .filter((i: any) => typeof i?.productId === 'string');
+        .filter((i: unknown): i is { productId: string; variant?: unknown; quantity?: unknown } => typeof (i as { productId?: unknown })?.productId === 'string');
       const products = await prisma.product.findMany({
         where: { id: { in: items.map((i) => i.productId) }, status: 'ACTIVE' },
         select: { id: true, price: true, categoryId: true },

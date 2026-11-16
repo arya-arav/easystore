@@ -45,9 +45,10 @@ export async function POST(request: NextRequest) {
     const order = await prisma.order.findUnique({ where: { id: orderId } });
 
     return NextResponse.json({ success: true, order });
-  } catch (error: any) {
+  } catch (error) {
+    console.error('Razorpay verify error:', error);
     return NextResponse.json(
-      { error: error.message || 'Payment verification failed' },
+      { error: 'Payment verification failed' },
       { status: 500 }
     );
   }

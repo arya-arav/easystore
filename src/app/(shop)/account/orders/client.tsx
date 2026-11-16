@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Search } from 'lucide-react';
 import { AccountHeader, StatusPill, accountButton, accountInput } from '@/components/account/ui';
 import { formatOrderMoney } from '@/lib/markets';
+import { thumbSrc } from '@/lib/image-hosts';
 
 interface OrderItem {
   id: string;
@@ -83,7 +84,7 @@ export function OrdersClient() {
                       {order.items.slice(0, 4).map((item) => (
                         <span key={item.id} className="h-14 w-14 overflow-hidden rounded-xl border-2 border-white bg-bg-primary">
                           {item.product?.images?.[0]?.url
-                            ? <img src={item.product.images[0].url} alt={item.productName} className="h-full w-full object-cover" />
+                            ? <img src={thumbSrc(item.product.images[0].url, 128)} loading="lazy" alt={item.productName} className="h-full w-full object-cover" />
                             : <span className="flex h-full items-center justify-center text-lg">{<ShopEmoji />}</span>}
                         </span>
                       ))}

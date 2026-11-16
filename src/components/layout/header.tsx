@@ -13,6 +13,7 @@ import { CurrencySwitcher } from '@/components/currency-switcher';
 import { FallbackImage } from '@/components/ui/fallback-image';
 import { categoryPictures } from '@/lib/category-picture';
 import { useShippingOffer } from '@/lib/use-shipping-offer';
+import { thumbSrc } from '@/lib/image-hosts';
 
 interface NavCategory { name: string; href: string; image?: string | null; cover?: string | null; count?: number; children?: { name: string; href: string }[] }
 
@@ -233,7 +234,7 @@ export function Header() {
                           className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#F7F7F5] transition-colors text-left">
                           <div className="w-10 h-10 rounded-lg bg-[#F8F6F2] overflow-hidden flex-shrink-0">
                             {p.images?.[0]?.url
-                              ? <img src={p.images[0].url} alt={p.name} className="w-full h-full object-cover" />
+                              ? <img src={thumbSrc(p.images[0].url, 128)} loading="lazy" alt={p.name} className="w-full h-full object-cover" />
                               : <div className="w-full h-full flex items-center justify-center text-lg">{<ShopEmoji />}</div>}
                           </div>
                           <div className="flex-1 min-w-0">

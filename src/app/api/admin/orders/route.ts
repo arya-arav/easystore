@@ -1,3 +1,4 @@
+import { OrderStatus, PaymentMethod, PaymentStatus, type Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireStaff } from '@/lib/admin-auth';
@@ -12,18 +13,23 @@ const SORTS = {
   total_asc: { total: 'asc' },
 } as const;
 
+function oneOf<T extends string>(values: Record<string, T>, v: string | null): T | undefined {
+  return v && (Object.values(values) as string[]).includes(v) ? (v as T) : undefined;
+}
+
 function orderWhere(sp: URLSearchParams, q: string) {
-  const where: any = {};
-  const status = sp.get('status');
-  const payment = sp.get('payment');
-  const method = sp.get('method');
+  const where: Prisma.OrderWhereInput = {};
+  // Unknown values from the URL are ignored (they used to make the database query fail)
+  const status = oneOf(OrderStatus, sp.get('status'));
+  const payment = oneOf(PaymentStatus, sp.get('payment'));
+  const method = oneOf(PaymentMethod, sp.get('method'));
   if (status) where.status = status;
   if (payment) where.paymentStatus = payment;
   if (method) where.paymentMethod = method;
   const created = dayRange(sp.get('from'), sp.get('to'));
   if (created) where.createdAt = created;
   if (q) {
-    const has = { contains: q.replace(/^#/, ''), mode: 'insensitive' };
+    const has = { contains: q.replace(/^#/, ''), mode: 'insensitive' as const };
     where.OR = [{ orderNumber: has }, { shippingName: has }, { shippingPhone: has }, { user: { email: has } }, { couponCode: has }];
   }
   return where;
